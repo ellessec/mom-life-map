@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F7F4EE">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>妈妈，你已经走了这么远</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,400;1,500&family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400;500&display=swap">
+<link rel="stylesheet" href="vendor/maplibre-gl.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============ 地图 ============ -->
+<main class="app" id="app" aria-hidden="true">
+  <div id="map"></div>
+
+  <div class="top-left glass" id="titleChip">
+    <strong>妈妈的人生地图</strong>
+    <span id="statLine">4 个地方</span>
+  </div>
+
+  <div class="controls">
+    <button class="glass round" id="zoomIn" type="button" aria-label="放大">+</button>
+    <button class="glass round" id="zoomOut" type="button" aria-label="缩小">−</button>
+    <button class="glass round" id="home" type="button" aria-label="看全部">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c3.2 3.4 3.2 13.6 0 17M12 3.5c-3.2 3.4-3.2 13.6 0 17"/></svg>
+    </button>
+    <button class="glass round" id="giftAgain" type="button" aria-label="再拆一次礼物">
+      <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M3 7h18v3H3zM12 7v13M12 7c-2-4-6-3-5 0M12 7c2-4 6-3 5 0"/></svg>
+    </button>
+  </div>
+
+  <div class="bottom-bar">
+    <p class="hint glass" id="hint">点照片，或者放大看看那里的照片</p>
+    <div class="actions">
+      <button class="glass pill" id="addPlace" type="button">＋ 新的地方</button>
+      <button class="glass pill primary" id="finish" type="button">完成</button>
+    </div>
+  </div>
+
+  <div class="pick-banner glass" id="pickBanner" hidden>
+    <span id="pickText">在地图上点一下</span>
+    <button type="button" id="pickCancel">取消</button>
+  </div>
+
+  <!-- 地点相册 -->
+  <aside class="sheet" id="sheet" aria-label="地点" hidden>
+    <div class="grabber" id="grabber"></div>
+    <div class="sheet-body" id="sheetBody"></div>
+  </aside>
+</main>
+
+<!-- ============ 照片大图 ============ -->
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lb-close" id="lbClose" type="button" aria-label="关闭">×</button>
+  <button class="lb-nav prev" id="lbPrev" type="button" aria-label="上一张">‹</button>
+  <figure><img id="lbImg" alt=""><figcaption id="lbCap"></figcaption></figure>
+  <button class="lb-nav next" id="lbNext" type="button" aria-label="下一张">›</button>
+</div>
+
+<!-- ============ 写明信片 ============ -->
+<div class="modal" id="composer" hidden>
+  <form class="composer" id="composerForm" autocomplete="off">
+    <p class="modal-title">写一张明信片 · <span id="cPlace"></span></p>
+    <div class="postcard edit">
+      <div class="pc-photo" id="cPhotoWrap" hidden><img id="cPhoto" alt=""><button type="button" id="cPhotoRemove">移除照片</button></div>
+      <div class="pc-main">
+        <div class="pc-msg">
+          <label class="sr" for="cText">想说的话</label>
+          <textarea id="cText" rows="7" placeholder="在这里，我想起了……"></textarea>
+        </div>
+        <div class="pc-side">
+          <fieldset class="stamps" id="cStamps"><legend class="sr">选一张邮票</legend></fieldset>
+          <label class="pm-year">年份<input id="cYear" inputmode="numeric" maxlength="4" placeholder="1998"></label>
+          <label class="attach">
+            <input type="file" id="cFile" accept="image/*" hidden>
+            <span>＋ 贴一张照片</span>
+          </label>
+          <p class="to">寄给：<span class="hand">未来的我</span></p>
+        </div>
+      </div>
+    </div>
+    <p class="form-msg" id="cMsg"></p>
+    <div class="modal-actions">
+      <button type="button" class="pill ghost" id="cCancel">取消</button>
+      <button type="submit" class="pill primary" id="cSend">寄到地图上</button>
+    </div>
+  </form>
+</div>
+
+<!-- ============ 新的地方 ============ -->
+<div class="modal" id="placeModal" hidden>
+  <form class="place-form" id="placeForm" autocomplete="off">
+    <p class="modal-title">在地图上加一个地方</p>
+    <label class="field">这个地方叫<input id="pName" placeholder="比如：洛阳、温哥华、外婆家"></label>
+    <label class="field">大概是哪一年<input id="pYear" inputmode="numeric" maxlength="4" placeholder="可以不填"></label>
+    <div class="results" id="pResults"></div>
+    <p class="form-msg" id="pMsg"></p>
+    <div class="modal-actions">
+      <button type="button" class="pill ghost" id="pCancel">取消</button>
+      <button type="submit" class="pill primary">找一找</button>
+    </div>
+  </form>
+</div>
+
+<!-- ============ 回顾 ============ -->
+<section class="review" id="review" hidden>
+  <div class="rv-inner" id="rvInner"></div>
+</section>
+
+<!-- ============ 礼物 ============ -->
+<div class="scene" id="scene" hidden>
+  <div class="intro">
+    <h1>给妈妈的一份礼物</h1>
+    <p>For Mom, on her fiftieth</p>
+  </div>
+  <button class="gift" id="gift" type="button" aria-label="打开礼物">
+    <span class="shadow"></span>
+    <span class="box"><span class="rib-v"></span><span class="rib-h"></span></span>
+    <span class="lid"><span class="rib-v"></span></span>
+    <span class="bow"><i></i><i></i><b></b></span>
+    <span class="tag">给妈妈<small>with love</small></span>
+  </button>
+  <p class="tap"><span>轻轻点一下 · 打开它</span></p>
+  <div class="folded" aria-hidden="true"><div class="creases"></div><div class="ttl">Mom</div></div>
+</div>
+
+<script src="vendor/maplibre-gl.js"></script>
+<script src="vendor/supercluster.min.js"></script>
+<script src="vendor/exifr-lite.umd.js"></script>
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
