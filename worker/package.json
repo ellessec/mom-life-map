@@ -1,0 +1,8 @@
+{
+  "name": "mom-life-map-server",
+  "private": true,
+  "type": "module",
+  "scripts": { "deploy": "wrangler deploy", "dev": "wrangler dev" },
+  "dependencies": { "@anthropic-ai/sdk": "latest" },
+  "devDependencies": { "wrangler": "^4" }
+}

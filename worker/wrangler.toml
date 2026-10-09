@@ -1,0 +1,17 @@
+name = "mom-life-map"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# 只接受从这些网站来的请求（逗号分开）
+ALLOWED_ORIGIN = "https://ellessec.github.io,http://localhost:8765"
+# 允许备份的“家庭保险箱”编号（逗号分开）。在网站上打开 #setup-backup 会生成一个，填在这里
+VAULTS = "9226b74ffaef3579fa51cdcc98ba07b1"
+
+# 备份存在这个 R2 bucket 里：npx wrangler r2 bucket create mom-life-map-backup
+[[r2_buckets]]
+binding = "BACKUP"
+bucket_name = "mom-life-map-backup"
+
+# Anthropic API key（只有用 AI 时才需要）：npx wrangler secret put ANTHROPIC_API_KEY

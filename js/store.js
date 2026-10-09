@@ -42,7 +42,7 @@ window.Store = (function () {
 
 /* 照片处理：读位置和日期，缩小尺寸，生成缩略图 */
 window.Photo = {
-  async read(file) {
+  async read(file, maxFull = 1800) {
     let gps = null, date = null;
     try { const g = await exifr.gps(file); if (g && isFinite(g.latitude) && isFinite(g.longitude)) gps = [g.longitude, g.latitude]; } catch (e) {}
     try { const m = await exifr.parse(file, ['DateTimeOriginal', 'CreateDate']); const d = m && (m.DateTimeOriginal || m.CreateDate); if (d instanceof Date && !isNaN(d)) date = d.toISOString().slice(0, 10); } catch (e) {}
@@ -51,7 +51,7 @@ window.Photo = {
     catch (e) {
       bmp = await new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = () => rej(new Error('decode')); img.src = URL.createObjectURL(file); });
     }
-    const full = await this.draw(bmp, 1800, false), thumb = await this.draw(bmp, 360, true);
+    const full = await this.draw(bmp, maxFull, false), thumb = await this.draw(bmp, 360, true);
     return { gps, date, full, thumb };
   },
   draw(src, max, square) {

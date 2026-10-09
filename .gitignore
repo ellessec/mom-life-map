@@ -1,0 +1,11 @@
+# 原始截图里有微信名字和头像，只用剪出来的照片
+some memorable moments/
+worker/node_modules/
+worker/.wrangler/
+.DS_Store
+# 原始录音留在电脑上，网站只用剪好的版本
+sounds/*.m4a
+!sounds/voice-birthday.m4a
+!sounds/birthday-*.m4a
+!sounds/greet-*.m4a
+!sounds/diary-voice.m4a

@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#F7F4EE">
+<meta name="theme-color" content="#FFF8F1">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>妈妈，你已经走了这么远</title>
+<title>小妈，你已经走了这么远</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,400;1,500&family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400;500&display=swap">
@@ -19,8 +19,9 @@
   <div id="map"></div>
 
   <div class="top-left glass" id="titleChip">
-    <strong>妈妈的人生地图</strong>
+    <strong>小妈的人生地图</strong>
     <span id="statLine">4 个地方</span>
+    <button type="button" class="cloud-chip" id="cloudChip" hidden><i></i><span id="cloudText">云端备份</span></button>
   </div>
 
   <div class="controls">
@@ -29,17 +30,13 @@
     <button class="glass round" id="home" type="button" aria-label="看全部">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c3.2 3.4 3.2 13.6 0 17M12 3.5c-3.2 3.4-3.2 13.6 0 17"/></svg>
     </button>
-    <button class="glass round" id="giftAgain" type="button" aria-label="再拆一次礼物">
-      <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M3 7h18v3H3zM12 7v13M12 7c-2-4-6-3-5 0M12 7c2-4 6-3 5 0"/></svg>
+    <button class="glass round" id="openSettings" type="button" aria-label="设置">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></svg>
     </button>
   </div>
 
   <div class="bottom-bar">
     <p class="hint glass" id="hint">点照片，或者放大看看那里的照片</p>
-    <div class="actions">
-      <button class="glass pill" id="addPlace" type="button">＋ 新的地方</button>
-      <button class="glass pill primary" id="finish" type="button">完成</button>
-    </div>
   </div>
 
   <div class="pick-banner glass" id="pickBanner" hidden>
@@ -47,12 +44,45 @@
     <button type="button" id="pickCancel">取消</button>
   </div>
 
+  <!-- 一生旅程 -->
+  <section class="journey" id="journey" aria-live="polite" hidden>
+    <div class="jy-year" aria-hidden="true"><b id="jyYear"></b><span id="jyAge"></span></div>
+    <button class="jy-skip" id="jySkip" type="button">跳过</button>
+    <article class="jy-card" id="jyCard">
+      <div class="jy-body" id="jyBody"></div>
+      <footer class="jy-foot">
+        <div class="jy-dots" id="jyDots"></div>
+        <button class="jy-btn ghost" id="jyPrev" type="button" aria-label="上一站">‹</button>
+        <button class="jy-btn" id="jyNext" type="button">下一站</button>
+      </footer>
+    </article>
+  </section>
+
   <!-- 地点相册 -->
   <aside class="sheet" id="sheet" aria-label="地点" hidden>
     <div class="grabber" id="grabber"></div>
     <div class="sheet-body" id="sheetBody"></div>
   </aside>
 </main>
+
+<!-- 底部的标签栏 -->
+<nav class="dock" id="dock" aria-label="主菜单">
+  <button type="button" data-tab="map" class="on"><i>🗺️</i><span>地图</span></button>
+  <button type="button" data-tab="journal" id="openJournal"><i>📖</i><span>回忆录</span><b class="badge" id="nJournal"></b></button>
+  <button type="button" class="dock-add" id="dockAdd" aria-label="写点什么" aria-expanded="false"><i>＋</i></button>
+  <button type="button" data-tab="diary" id="openDiary"><i>✍️</i><span>日记本</span><b class="badge" id="nDiary"></b></button>
+  <button type="button" data-tab="wish" id="openWishlist"><i>🌷</i><span>心愿单</span><b class="badge" id="nWish"></b></button>
+</nav>
+<div class="add-menu" id="addMenu" hidden>
+  <p class="am-title">想写点什么？</p>
+  <button type="button" id="amDiary"><i>✍️</i><b>写今天的日记</b><small>打字写</small></button>
+  <button type="button" id="amPrayer"><i>🙏</i><b>写祷告日记</b><small>经文 · 感恩 · 代祷</small></button>
+  <button type="button" id="amPhoto"><i>📷</i><b>拍下手写的日记</b><small>本子上写好的，拍一张</small></button>
+  <button type="button" id="addPlace"><i>🌸</i><b>记一个地方</b><small>去过的地方、那时候的心情</small></button>
+  <button type="button" id="addWish"><i>✈️</i><b>想去哪里</b><small>放进心愿单</small></button>
+  <button type="button" id="amPoster"><i>🎨</i><b>做一张海报</b><small>发小红书用</small></button>
+</div>
+
 
 <!-- ============ 照片大图 ============ -->
 <div class="lightbox" id="lightbox" hidden>
@@ -92,41 +122,283 @@
   </form>
 </div>
 
-<!-- ============ 新的地方 ============ -->
-<div class="modal" id="placeModal" hidden>
-  <form class="place-form" id="placeForm" autocomplete="off">
-    <p class="modal-title">在地图上加一个地方</p>
-    <label class="field">这个地方叫<input id="pName" placeholder="比如：洛阳、温哥华、外婆家"></label>
-    <label class="field">大概是哪一年<input id="pYear" inputmode="numeric" maxlength="4" placeholder="可以不填"></label>
-    <div class="results" id="pResults"></div>
-    <p class="form-msg" id="pMsg"></p>
+<!-- ============ 记一个地方 ============ -->
+<div class="modal" id="entry" hidden>
+  <form class="entry" id="entryForm" autocomplete="off">
+    <header class="e-head">
+      <p class="modal-title" id="eTitle">记下一个地方</p>
+      <button type="button" class="x" id="eClose" aria-label="关闭">×</button>
+    </header>
+
+    <p class="e-lbl">在哪里</p>
+    <div id="eFindBox">
+      <div class="e-search">
+        <input id="eQuery" placeholder="搜一个地方，比如：西湖、外婆家那条街" enterkeyhint="search">
+        <button type="button" id="eFind">搜索</button>
+      </div>
+      <div class="results" id="eResults"></div>
+      <div class="e-loc-btns">
+        <button type="button" id="ePick"><span aria-hidden="true">📍</span> 在地图上点一下</button>
+        <button type="button" id="eHere"><span aria-hidden="true">◎</span> 我现在就在这里</button>
+      </div>
+    </div>
+    <div class="e-chosen" id="eChosen" hidden>
+      <i class="e-fl" aria-hidden="true"></i>
+      <div><b id="eChosenName"></b><small id="eChosenSub"></small></div>
+      <button type="button" id="eChange">换一个</button>
+    </div>
+
+    <label class="field">给这里起个名字<input id="eName" placeholder="比如：第一次看海、女儿的学校"></label>
+    <label class="field e-year">哪一年<input id="eYear" inputmode="numeric" maxlength="4" placeholder="2026"></label>
+
+    <p class="e-lbl">那时候的心情 <small>可以选好几个</small></p>
+    <div class="moods" id="eMoods"></div>
+
+    <label class="field">想说的话
+      <textarea id="eText" rows="5" placeholder="那天的风、那天的人、那时候在想什么……"></textarea>
+    </label>
+
+    <p class="e-lbl">照片 <small>可以不加</small></p>
+    <div class="e-photos" id="ePhotos">
+      <label class="e-add"><input type="file" id="eFiles" accept="image/*" multiple hidden><span>＋</span>加照片</label>
+    </div>
+
+    <p class="form-msg" id="eMsg"></p>
     <div class="modal-actions">
-      <button type="button" class="pill ghost" id="pCancel">取消</button>
-      <button type="submit" class="pill primary">找一找</button>
+      <button type="button" class="pill ghost w-del" id="eDelete" hidden>删掉这个地方</button>
+      <button type="button" class="pill ghost" id="eCancel">取消</button>
+      <button type="submit" class="pill primary" id="eSave">放到地图上</button>
     </div>
   </form>
 </div>
+
+<!-- ============ 想去哪里 ============ -->
+<div class="modal side" id="wish" hidden>
+  <form class="entry wish-form" id="wishForm" autocomplete="off">
+    <header class="e-head">
+      <div><p class="w-eyebrow">Where to next?</p><p class="modal-title" id="wTitle">接下来，想去哪里？</p></div>
+      <button type="button" class="x" id="wClose" aria-label="关闭">×</button>
+    </header>
+    <div class="e-search w-search">
+      <input id="wQuery" placeholder="一个国家、一座城市，比如：冰岛、京都" enterkeyhint="search">
+      <button type="button" id="wFind">看看</button>
+    </div>
+    <div class="w-sugg" id="wSugg"></div>
+    <p class="e-note" id="wStatus"></p>
+
+    <div id="wPlace" hidden>
+      <div class="w-hero">
+        <i class="w-bud" aria-hidden="true"></i>
+        <div><h3 id="wName"></h3><small id="wSub"></small></div>
+      </div>
+      <p class="w-about" id="wAbout"></p>
+      <div class="w-alt" id="wAlt"></div>
+      <div class="w-grid" id="wGrid"></div>
+      <p class="w-credit">照片来自 Wikipedia / Wikimedia Commons · 点 ♡ 留下喜欢的</p>
+
+      <p class="e-lbl">想在那里做什么 <small>可以选好几个</small></p>
+      <div class="moods" id="wTodo"></div>
+      <p class="e-lbl">想和谁一起去</p>
+      <div class="moods" id="wWith"></div>
+      <label class="field">还想说 <small>可以不写</small>
+        <textarea id="wText" rows="3" placeholder="比如：想在那里过一个生日、想去当地的教堂做一次礼拜……"></textarea>
+      </label>
+      <p class="form-msg" id="wMsg"></p>
+      <div class="modal-actions">
+        <button type="button" class="pill ghost w-del" id="wDelete" hidden>删掉</button>
+        <button type="button" class="pill ghost" id="wCancel">取消</button>
+        <button type="submit" class="pill primary" id="wSave">放进心愿单 ✨</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- ============ 回忆录 / 心愿单 ============ -->
+<section class="book journal" id="journal" hidden><div class="bk-inner" id="jnInner"></div></section>
+<section class="book wishbook" id="wishlist" hidden><div class="bk-inner" id="wlInner"></div></section>
+<section class="book diarybook" id="diary" hidden><div class="bk-inner" id="dyInner"></div></section>
+<section class="book flashbook" id="flash" hidden><div class="bk-inner" id="flInner"></div></section>
+
+<!-- ============ 写日记 ============ -->
+<div class="modal" id="diaryModal" hidden>
+  <form class="entry diary-form" id="diaryForm" autocomplete="off">
+    <header class="e-head">
+      <div class="d-type" role="tablist">
+        <button type="button" data-type="journal" class="on">✍️ 日记</button>
+        <button type="button" data-type="prayer">🙏 祷告日记</button>
+      </div>
+      <button type="button" class="x" id="dClose" aria-label="关闭">×</button>
+    </header>
+    <label class="d-date"><input type="date" id="dDate"><span id="dDateText"></span></label>
+
+    <div class="d-pages-box">
+      <p class="e-lbl">手写的那一页 <small>拍下来就好，可以好几页</small></p>
+      <div class="e-photos d-pages" id="dPages">
+        <label class="e-add d-add"><input type="file" id="dFiles" accept="image/*" multiple hidden><span>📷</span>拍一页 / 选照片</label>
+      </div>
+    </div>
+
+    <div class="d-or"><span>或者，直接在这里写</span></div>
+
+    <div class="d-journal">
+      <input class="d-title" id="dTitle" placeholder="今天的题目（可以不写）">
+      <textarea class="d-paper" id="dText" rows="8" placeholder="今天……"></textarea>
+      <p class="e-lbl">今天的心情</p>
+      <div class="moods" id="dMoods"></div>
+    </div>
+
+    <div class="d-prayer" hidden>
+      <label class="field">📖 今天的经文<input id="dVerse" placeholder="比如：诗篇 23:1 耶和华是我的牧者，我必不致缺乏。"></label>
+      <label class="field">🌼 感恩的事<textarea id="dThanks" rows="3" placeholder="感谢主……"></textarea></label>
+      <label class="field">🙏 为这些祷告 <small>一行写一件</small><textarea id="dRequests" rows="4" placeholder="为家人的健康&#10;为孩子的工作&#10;……"></textarea></label>
+      <label class="field">💬 想对神说的话<textarea class="d-paper" id="dPrayer" rows="5" placeholder="亲爱的天父……"></textarea></label>
+    </div>
+
+    <p class="form-msg" id="dMsg"></p>
+    <div class="modal-actions">
+      <button type="button" class="pill ghost w-del" id="dDelete" hidden>删掉</button>
+      <button type="button" class="pill ghost" id="dCancel">取消</button>
+      <button type="submit" class="pill primary" id="dSave">收进日记本</button>
+    </div>
+  </form>
+</div>
+
+<!-- ============ 做成海报 ============ -->
+<div class="modal poster-modal" id="poster" hidden>
+  <div class="entry poster-box">
+    <header class="e-head"><p class="modal-title">🎨 做成海报</p><button type="button" class="x" id="pClose" aria-label="关闭">×</button></header>
+    <div class="pt-wrap">
+      <div class="pt-preview"><canvas id="pCanvas" aria-label="海报预览"></canvas></div>
+      <div class="pt-controls">
+        <p class="e-lbl">样式</p>
+        <div class="pt-chips" id="pStyles"></div>
+        <p class="e-lbl">大小</p>
+        <div class="pt-chips" id="pSizes"></div>
+        <label class="field">标题<input id="pTitle" placeholder="可以不写"></label>
+        <label class="field">文字 <small id="pCount"></small><textarea id="pText" rows="6" placeholder="想说的话……"></textarea></label>
+        <label class="field">署名<input id="pSign" placeholder="可以不写，比如：小妈"></label>
+        <p class="e-lbl">显示</p>
+        <div class="pt-chips" id="pShow"></div>
+        <p class="pt-tip" id="pTip"></p>
+        <div class="pt-actions">
+          <button type="button" class="pill ghost" id="pCopy">复制文字</button>
+          <button type="button" class="pill primary" id="pSave">保存 / 分享</button>
+        </div>
+        <p class="pt-note">在 iPhone 上，点“保存 / 分享”以后选“存储图像”，就会存进相册；也可以直接选小红书。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 云端备份 ============ -->
+<div class="modal" id="cloudPanel" hidden>
+  <div class="entry cloud-box">
+    <header class="e-head"><p class="modal-title">☁️ 云端备份</p><button type="button" class="x" id="cpClose" aria-label="关闭">×</button></header>
+    <div id="cpBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden><span id="toastText"></span><button type="button" id="toastGo">去看看 →</button></div>
 
 <!-- ============ 回顾 ============ -->
 <section class="review" id="review" hidden>
   <div class="rv-inner" id="rvInner"></div>
 </section>
 
+<!-- ============ 设置 ============ -->
+<div class="modal" id="settings" hidden>
+  <div class="entry set-box">
+    <header class="e-head"><p class="modal-title">⚙️ 设置</p><button type="button" class="x" id="setClose" aria-label="关闭">×</button></header>
+    <p class="e-lbl">打开网站的时候</p>
+    <div class="set-choice" id="setIntro">
+      <button type="button" data-intro="gift"><i>🎁</i><b>每次都拆礼物</b><small>再看一遍礼物和一生的旅程</small></button>
+      <button type="button" data-intro="welcome"><i>🌸</i><b>直接跟我打招呼</b><small>一句问候、今天的经文，然后开始写</small></button>
+    </div>
+    <p class="e-lbl">再看一次</p>
+    <div class="set-row">
+      <button type="button" class="pill ghost" id="giftAgain">🎁 再拆一次礼物</button>
+      <button type="button" class="pill ghost" id="replay">🛤️ 再走一遍旅程</button>
+    </div>
+    <p class="e-lbl">声音</p>
+    <button type="button" class="set-cloud set-sound" id="setSound"><span>🔊 音效开着</span><small>点一下切换</small></button>
+    <p class="e-lbl">云端备份</p>
+    <button type="button" class="set-cloud" id="setCloud"><span id="setCloudText">☁️ 云端备份</span><small>›</small></button>
+  </div>
+</div>
+
+<!-- ============ 打招呼 ============ -->
+<section class="welcome" id="welcome" hidden>
+  <div class="wl-sky"></div>
+  <div class="wl-glow"></div>
+  <div class="wl-stars" aria-hidden="true"></div>
+  <div class="wl-petals" id="wlPetals" aria-hidden="true"></div>
+  <i class="vine tl" aria-hidden="true"></i><i class="vine br" aria-hidden="true"></i>
+  <div class="wl-inner">
+    <button type="button" class="wl-flower" id="wlBud" aria-label="点开花苞"></button>
+    <p class="wl-date" id="wlDate"></p>
+    <p class="wl-tap">轻轻点一下</p>
+    <h1 class="wl-hello" id="wlHello"></h1>
+    <p class="wl-line" id="wlLine"></p>
+    <figure class="wl-verse"><blockquote id="wlVerse"></blockquote><figcaption id="wlRef"></figcaption></figure>
+    <button type="button" class="wl-memory" id="wlMemory" hidden></button>
+    <div class="wl-actions">
+      <button type="button" id="wlWrite"><i>✍️</i>写今天的日记</button>
+      <button type="button" id="wlPray"><i>🙏</i>祷告</button>
+      <button type="button" id="wlEnter" class="ghost"><i>🗺️</i>看看地图</button>
+    </div>
+    <button type="button" class="wl-recap" id="wlRecap" hidden>📅 看看这一周的回顾 →</button>
+    <p class="wl-from" id="wlFrom"></p>
+    <button type="button" class="wl-gift" id="wlGift">🎁 想再拆一次礼物？</button>
+  </div>
+</section>
+
 <!-- ============ 礼物 ============ -->
 <div class="scene" id="scene" hidden>
+  <div class="dapple" aria-hidden="true"></div>
+  <i class="vine tl" aria-hidden="true"></i><i class="vine br" aria-hidden="true"></i><i class="vine bl" aria-hidden="true"></i>
+  <canvas class="motes" id="motes" aria-hidden="true"></canvas>
+  <div class="flood" aria-hidden="true"></div>
   <div class="intro">
-    <h1>给妈妈的一份礼物</h1>
-    <p>For Mom, on her fiftieth</p>
+    <p class="eyebrow">For Mom · on her fiftieth</p>
+    <h1 id="giftTitle">给小妈的一份礼物</h1>
   </div>
+  <div class="beam" aria-hidden="true"></div>
   <button class="gift" id="gift" type="button" aria-label="打开礼物">
-    <span class="shadow"></span>
-    <span class="box"><span class="rib-v"></span><span class="rib-h"></span></span>
-    <span class="lid"><span class="rib-v"></span></span>
-    <span class="bow"><i></i><i></i><b></b></span>
-    <span class="tag">给妈妈<small>with love</small></span>
+    <span class="floor"></span>
+    <span class="bob">
+      <span class="cube" id="cube">
+        <span class="face fr"><i class="rb"></i><span class="tag"><b>给小妈</b><small>with love</small></span></span>
+        <span class="face bk"><i class="rb"></i></span>
+        <span class="face rt"><i class="rb"></i></span>
+        <span class="face lf"><i class="rb"></i></span>
+        <span class="face bt"><i class="glow"></i></span>
+        <span class="lid">
+          <span class="face tp"><i class="rb"></i><i class="rb x"></i></span>
+          <span class="face sk fr"><i class="rb"></i></span>
+          <span class="face sk bk"><i class="rb"></i></span>
+          <span class="face sk rt"><i class="rb"></i></span>
+          <span class="face sk lf"><i class="rb"></i></span>
+          <span class="bow"><svg viewBox="0 0 120 70"><use href="#bowShape"/></svg><svg viewBox="0 0 120 70"><use href="#bowShape"/></svg></span>
+        </span>
+      </span>
+    </span>
   </button>
   <p class="tap"><span>轻轻点一下 · 打开它</span></p>
-  <div class="folded" aria-hidden="true"><div class="creases"></div><div class="ttl">Mom</div></div>
+  <div class="fmap" id="fmap" aria-hidden="true"></div>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="bowGold" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#FFE6A0"/><stop offset=".45" stop-color="#F2B33D"/><stop offset=".7" stop-color="#FFF1C4"/><stop offset="1" stop-color="#D99A1E"/>
+      </linearGradient>
+      <g id="bowShape">
+        <path d="M60 52 C40 20 6 6 8 30 C10 50 40 52 60 52Z" fill="url(#bowGold)" stroke="#C98A17" stroke-width="1.2"/>
+        <path d="M60 52 C80 20 114 6 112 30 C110 50 80 52 60 52Z" fill="url(#bowGold)" stroke="#C98A17" stroke-width="1.2"/>
+        <path d="M60 52 C34 34 22 28 20 32 M60 52 C86 34 98 28 100 32" fill="none" stroke="#B97E14" stroke-width="1" opacity=".5"/>
+        <path d="M56 54 L44 70 L50 70 L60 56 L70 70 L76 70 L64 54Z" fill="#E0A126"/>
+        <g transform="translate(60 50) scale(.5)"><g transform="rotate(0)"><path d="M0 0C7-3 17-13 11-25C7-32-3-31-6-25C-9-18-5-8 0 0Z" fill="#F27BAA" stroke="rgba(120,20,60,.18)" stroke-width=".8"/><path d="M1-3C5-8 8-15 7-21" stroke="rgba(255,255,255,.45)" fill="none" stroke-width="1.2" stroke-linecap="round"/></g><g transform="rotate(72)"><path d="M0 0C7-3 17-13 11-25C7-32-3-31-6-25C-9-18-5-8 0 0Z" fill="#F27BAA" stroke="rgba(120,20,60,.18)" stroke-width=".8"/><path d="M1-3C5-8 8-15 7-21" stroke="rgba(255,255,255,.45)" fill="none" stroke-width="1.2" stroke-linecap="round"/></g><g transform="rotate(144)"><path d="M0 0C7-3 17-13 11-25C7-32-3-31-6-25C-9-18-5-8 0 0Z" fill="#F27BAA" stroke="rgba(120,20,60,.18)" stroke-width=".8"/><path d="M1-3C5-8 8-15 7-21" stroke="rgba(255,255,255,.45)" fill="none" stroke-width="1.2" stroke-linecap="round"/></g><g transform="rotate(216)"><path d="M0 0C7-3 17-13 11-25C7-32-3-31-6-25C-9-18-5-8 0 0Z" fill="#F27BAA" stroke="rgba(120,20,60,.18)" stroke-width=".8"/><path d="M1-3C5-8 8-15 7-21" stroke="rgba(255,255,255,.45)" fill="none" stroke-width="1.2" stroke-linecap="round"/></g><g transform="rotate(288)"><path d="M0 0C7-3 17-13 11-25C7-32-3-31-6-25C-9-18-5-8 0 0Z" fill="#F27BAA" stroke="rgba(120,20,60,.18)" stroke-width=".8"/><path d="M1-3C5-8 8-15 7-21" stroke="rgba(255,255,255,.45)" fill="none" stroke-width="1.2" stroke-linecap="round"/></g><circle r="7.5" fill="#FFC56B"/><circle r="3.4" fill="#FFF3C4"/></g>
+      </g>
+    </defs>
+  </svg>
 </div>
 
 <script src="vendor/maplibre-gl.js"></script>
