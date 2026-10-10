@@ -1016,3 +1016,15 @@ button,label,[role=button]{touch-action:manipulation}
 .wl-trash{background:#fff!important;color:var(--ink-3)!important;border:1px solid var(--line)!important;box-shadow:none!important}
 .wl-trash.sure{width:auto!important;flex:1!important;padding:0 10px!important;color:#B4554D!important;border-color:#F0D3CF!important;font-size:13px!important}
 #cloudPanel.on-top{z-index:90}
+
+/* trips: a star where they went */
+.trip-star{padding:0;border:0;background:none;cursor:pointer}
+.trip-star .ts-in{position:relative;display:flex;flex-direction:column;align-items:center;transition:transform .2s var(--ease)}
+.trip-star:hover .ts-in{transform:scale(1.06)}
+.trip-star:active .ts-in{transform:scale(.95)}
+.trip-star img{display:block;width:54px;height:54px;object-fit:cover;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px #F2B33D,0 6px 14px -6px rgba(60,40,30,.6)}
+.trip-star i{position:absolute;top:-8px;right:-10px;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(135deg,#FFD866,#F2B33D);color:#fff;font-style:normal;font-size:15px;text-shadow:0 1px 1px rgba(150,90,0,.4);box-shadow:0 2px 6px rgba(150,90,0,.35)}
+.trip-star b{margin-top:4px;padding:2px 9px;border-radius:999px;background:rgba(255,253,246,.95);font-size:12.5px;font-weight:600;color:#7A5410;white-space:nowrap;box-shadow:0 2px 6px -3px rgba(60,40,30,.4)}
+.trip-star b small{font-weight:500;color:#B98A2E}
+body.journeying .trip-star{visibility:hidden}
+.jn-item.trip{background:linear-gradient(180deg,#FFFCEF,#fff)}

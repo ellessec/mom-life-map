@@ -18,9 +18,7 @@ window.GIFT = {
     { id: 'to', city: '多伦多', en: 'Toronto', region: '安大略 · 加拿大', coord: [-79.38, 43.65], year: '',
       note: '我记得第一场大雪的时候，你在窗边站了很久，说：“原来这里的雪是这样的。”' },
     { id: 'ca', city: '加州', en: 'California', region: 'Arcadia · 美国', coord: [-118.0519, 34.1316], year: '',
-      note: '我记得在海边，你难得什么都没安排，只是坐着看海。' },
-    { id: 'pc', city: '蓬塔卡纳', en: 'Punta Cana', region: '多米尼加', coord: [-68.3692, 18.5566], year: '2023',
-      note: '' }
+      note: '我记得在海边，你难得什么都没安排，只是坐着看海。' }
   ],
 
   // 你放进去的照片：{ place: 地点id, src: 'photos/文件名.jpg', coord: [经度, 纬度], caption: '说明', date: '2019-07' }
@@ -80,29 +78,38 @@ window.GIFT = {
       photos: [{ p: 'sh-home-1402', caption: '世纪公园 1402' }, { p: 'sh-grandma-birthday', caption: '给奶奶过生日' }] },
     { place: 'to', year: '', label: '后来', at: '43.7270, -79.3620', spot: '家 · 1 Chapleau',          // TODO: 年份
       title: '去了多伦多',
-      text: '后来，你们去了多伦多，家在 1 Chapleau。York U 就在不远的地方；湖心岛、Scarborough 的情人节、Blue Mountain，还有我在 Lakefield 毕业的那一天——你都在。',
+      text: '后来，你们去了多伦多，家在 1 Chapleau。York U 就在不远的地方；湖心岛、Scarborough 的情人节，还有我在 Lakefield 毕业的那一天——你都在。',
       photos: [{ p: 'to-chapleau-2', caption: '1 Chapleau' }, { p: 'to-chapleau-1', caption: '1 Chapleau' }, { p: 'to-home-3', caption: '在多伦多' },
                { p: 'to-york-u', caption: 'York U', at: '43.7742, -79.5047' },
                { p: 'to-centre-island', caption: '湖心岛', at: '43.6229, -79.3943' },
                { p: 'to-scarborough', caption: '情人节 · Scarborough', at: '43.7761, -79.2584' },
-               { p: 'to-lakefield', caption: '我毕业那天 · Lakefield', at: '44.4421, -78.2656' },
-               { p: 'trip-bluemountain-1', caption: 'Blue Mountain', at: '44.5019, -80.3108' },
-               { p: 'trip-bluemountain-2', caption: 'Blue Mountain', at: '44.5019, -80.3108' }] },
+               { p: 'to-lakefield', caption: '我毕业那天 · Lakefield', at: '44.4421, -78.2656' }] },
     { place: 'ca', year: '', label: '后来', at: '34.1316, -118.0519', spot: '家 · 594 W Huntington',
       title: '在 Arcadia 的家',
-      text: '后来，你们住在 Arcadia 的 594。你说：“每天早晨浇花，听着音乐，看着花朵静静绽放。”你在训练场边陪萌萌练啦啦队，也和我们一起去了 Laguna Beach 和拉斯维加斯。',
+      text: '后来，你们住在 Arcadia 的 594。你说：“每天早晨浇花，听着音乐，看着花朵静静绽放。”你在训练场边陪萌萌练啦啦队。',
       photos: [{ p: 'la-594-1', caption: '594' }, { p: 'la-594-2', caption: '594' }, { p: 'la-594-3', caption: '594' }, { p: 'la-594-4', caption: '594' },
                { p: 'moment-garden-1', caption: '每天早晨浇花' }, { p: 'moment-garden-2', caption: '每天早晨浇花' }, { p: 'moment-garden-3', caption: '每天早晨浇花' },
                { p: 'moment-garden-4', caption: '每天早晨浇花' }, { p: 'moment-garden-5', caption: '每天早晨浇花' }, { p: 'moment-garden-6', caption: '每天早晨浇花' },
                { p: 'moment-cheer-1', caption: '萌萌的啦啦队', at: '34.1296, -118.0364' }, { p: 'moment-cheer-2', caption: '萌萌的啦啦队', at: '34.1296, -118.0364' },
                { p: 'moment-cheer-3', caption: '萌萌的啦啦队', at: '34.1296, -118.0364' }, { p: 'moment-cheer-4', caption: '萌萌的啦啦队', at: '34.1296, -118.0364' },
-               { p: 'trip-laguna', caption: 'Laguna Beach', at: '33.5427, -117.7853' },
-               { p: 'trip-vegas-paris', caption: '拉斯维加斯 · 巴黎铁塔', at: '36.1122, -115.1706' },
                { p: 'trip-church-resort', caption: 'church resort' }] },        // TODO: church resort 在哪里？现在先放在家
-    { place: 'pc', year: 2023, at: '18.5566, -68.3692', spot: 'Punta Cana', by: 'plane',
-      title: '一起去看加勒比海',
-      text: '2023 年，一家人去了 Punta Cana，看加勒比海。',
-      photos: [{ p: 'trip-puntacana-1', caption: 'Punta Cana 2023' }, { p: 'trip-puntacana-2', caption: 'Punta Cana 2023' }, { p: 'trip-puntacana-3', caption: 'Punta Cana 2023' }] }
+  ],
+
+  // 一起去旅行的地方：地图上用 ⭐ 标出来，不连到人生的路线里
+  //   at: 地图上的位置；photos 里的照片有自己的 at 就贴在那里
+  trips: [
+    { name: 'Punta Cana', zh: '蓬塔卡纳', year: 2023, at: '18.5566, -68.3692', note: '一家人去看加勒比海。',
+      photos: [{ p: 'trip-puntacana-1' }, { p: 'trip-puntacana-2' }, { p: 'trip-puntacana-3' }, { p: 'trip-puntacana-4' }, { p: 'trip-puntacana-5' }, { p: 'trip-puntacana-6' }] },
+    { name: 'New York', zh: '纽约', year: '', at: '40.7128, -74.0060', note: '开车去纽约和波士顿的那一趟。',          // TODO: 哪一年？
+      photos: [{ p: 'trip-ny-liberty', caption: '看自由女神', at: '40.7028, -74.0158' }, { p: 'trip-ny-washington-sq', caption: '华盛顿广场', at: '40.7309, -73.9976' }] },
+    { name: 'Boston', zh: '波士顿', year: '', at: '42.3550, -71.0661', note: '开车去纽约和波士顿的那一趟。',
+      photos: [{ p: 'trip-boston', caption: '波士顿' }, { p: 'trip-boston-airbnb', caption: '波士顿的 Airbnb' }] },
+    { name: 'Las Vegas', zh: '拉斯维加斯', year: '', at: '36.1122, -115.1706', note: '',
+      photos: [{ p: 'trip-vegas-paris', caption: '巴黎铁塔' }] },
+    { name: 'Laguna Beach', zh: '拉古纳海滩', year: '', at: '33.5427, -117.7853', note: '',
+      photos: [{ p: 'trip-laguna', caption: 'Laguna Beach' }] },
+    { name: 'Blue Mountain', zh: '蓝山', year: '', at: '44.5019, -80.3108', note: '',
+      photos: [{ p: 'trip-bluemountain-1' }, { p: 'trip-bluemountain-2' }] }
   ],
 
   // 她发过的朋友圈和收到的评论（回忆录里会有“你写过的话”）

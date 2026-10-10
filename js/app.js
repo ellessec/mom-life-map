@@ -146,47 +146,56 @@
        it steps aside (gets quiet) whenever someone is talking or a song is playing */
     let amb = null, ducks = 0, songOn = false;
     const ambOn = () => G.ambient !== false && !(S.prefs && S.prefs.ambient === false) && on();
-    const AMB = 0.075;
-    function ambTarget() { return !amb || !ambOn() || document.hidden ? 0 : songOn ? 0 : ducks > 0 ? AMB * 0.22 : AMB; }
+    const AMB = 0.63;   // measured: the music then sits at the same loudness as the recorded voices (about -17.5 dBFS)
+    function ambTarget() { return !amb || !ambOn() || document.hidden ? 0 : songOn ? 0 : ducks > 0 ? AMB * 0.18 : AMB; }   // under a voice: about 15 dB quieter
     function ambLevel(sec = 1.2) { if (!amb) return; const t = ctx.currentTime, g = amb.out.gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(ambTarget(), t + sec); }
-    function startAmbient() {
-      if (!ctx || amb || !ambOn()) return;
-      const out = ctx.createGain(); out.gain.value = 0; out.connect(ctx.destination);
-      // a soft room: a short, decaying noise impulse as reverb
-      const rev = ctx.createConvolver(), len = ctx.sampleRate * 3.2, ir = ctx.createBuffer(2, len, ctx.sampleRate);
-      for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
-      rev.buffer = ir; const wet = ctx.createGain(); wet.gain.value = .55; rev.connect(wet).connect(out);
-      const dry = ctx.createGain(); dry.gain.value = .5; dry.connect(out);
-      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1400; lp.connect(dry); lp.connect(rev);
-      amb = { out, lp, rev, timer: 0, next: 0, step: 0, bell: 0 };
+    // the music itself, built on any audio context (so it can also be measured offline)
+    function buildAmbient(c, out) {
+      const dest = c.createDynamicsCompressor();
+      dest.threshold.value = -14; dest.knee.value = 8; dest.ratio.value = 6; dest.attack.value = .01; dest.release.value = .4;
+      dest.connect(out);
+      const rev = c.createConvolver(), len = c.sampleRate * 3.2, ir = c.createBuffer(2, len, c.sampleRate);
+      for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+      rev.buffer = ir; const wet = c.createGain(); wet.gain.value = .55; rev.connect(wet).connect(dest);
+      const dry = c.createGain(); dry.gain.value = .5; dry.connect(dest);
+      const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1400; lp.connect(dry); lp.connect(rev);
       const hz = m => 440 * 2 ** ((m - 69) / 12);
       // Cmaj9 – Am9 – Fmaj9 – G6/9 : warm, unresolved, peaceful
       const CHORDS = [[48, 55, 64, 71, 74], [45, 52, 60, 67, 71], [41, 48, 57, 64, 67], [43, 50, 59, 64, 69]];
       const PENT = [72, 74, 76, 79, 81, 84, 86, 88];
-      function note(m, t, dur, vol, type = 'triangle', dest = lp) {
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = type; o.frequency.value = hz(m); o.detune.value = (Math.random() - .5) * 8;
+      function note(m, t, dur, vol) {
+        const o = c.createOscillator(), g = c.createGain();
+        o.type = 'triangle'; o.frequency.value = hz(m); o.detune.value = (Math.random() - .5) * 8;
         g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + Math.min(2.5, dur * .35)); g.gain.setValueAtTime(vol, t + dur * .6); g.gain.linearRampToValueAtTime(0, t + dur);
-        o.connect(g).connect(dest); o.start(t); o.stop(t + dur + .1);
+        o.connect(g).connect(lp); o.start(t); o.stop(t + dur + .1);
       }
       function bell(m, t) {
-        const o = ctx.createOscillator(), g = ctx.createGain();
+        const o = c.createOscillator(), g = c.createGain();
         o.type = 'sine'; o.frequency.value = hz(m);
-        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.09, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + 3.2);
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.5, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + 3.2);
         o.connect(g); g.connect(dry); g.connect(rev); o.start(t); o.stop(t + 3.3);
       }
-      amb.next = ctx.currentTime + .1; amb.bell = ctx.currentTime + 2;
-      const tick = () => {   // schedule a little ahead, so it never stutters
-        while (amb.next < ctx.currentTime + 1.5) {
-          const ch = CHORDS[amb.step % CHORDS.length];
-          ch.forEach((m, i) => note(m, amb.next + i * .12, 9.5, i === 0 ? .05 : .035));
-          amb.next += 8; amb.step++;
-        }
-        while (amb.bell < ctx.currentTime + 1.5) { bell(PENT[Math.floor(Math.random() * PENT.length)], amb.bell); amb.bell += 2.5 + Math.random() * 4; }
+      let next = c.currentTime + .1, bellAt = c.currentTime + 2, step = 0;
+      return function tick(ahead = 1.5) {   // schedule a little ahead, so it never stutters
+        while (next < c.currentTime + ahead) { CHORDS[step % CHORDS.length].forEach((m, i) => note(m, next + i * .12, 9.5, i === 0 ? .3 : .21)); next += 8; step++; }
+        while (bellAt < c.currentTime + ahead) { bell(PENT[Math.floor(Math.random() * PENT.length)], bellAt); bellAt += 2.5 + Math.random() * 4; }
       };
-      tick(); amb.timer = setInterval(tick, 500);
+    }
+    function startAmbient() {
+      if (!ctx || amb || !ambOn()) return;
+      const out = ctx.createGain(); out.gain.value = 0; out.connect(ctx.destination);
+      const tick = buildAmbient(ctx, out);
+      amb = { out, timer: 0 };
+      tick(); amb.timer = setInterval(() => tick(), 500);
       ambLevel(4);
     }
+    // for checking the loudness: render 32 seconds offline and measure it
+    window.__measureAmbient = async () => {
+      const oc = new OfflineAudioContext(1, 48000 * 32, 48000), g = oc.createGain(); g.gain.value = AMB; g.connect(oc.destination);
+      buildAmbient(oc, g)(32); const buf = await oc.startRendering(), d = buf.getChannelData(0);
+      let sum = 0, n = 0, pk = 0; for (let i = 48000 * 4; i < d.length; i++) { sum += d[i] * d[i]; n++; pk = Math.max(pk, Math.abs(d[i])); }
+      return { rms: 20 * Math.log10(Math.sqrt(sum / n)), peak: 20 * Math.log10(pk) };
+    };
     function ambient(onOff) { if (onOff) { unlock(); startAmbient(); ambLevel(2); } else ambLevel(1.5); }
     function duck(sec) { ducks++; ambLevel(.4); setTimeout(() => { ducks = Math.max(0, ducks - 1); ambLevel(1.8); }, sec * 1000); }
     function song(playing) { songOn = playing; ambLevel(playing ? .6 : 2); }
@@ -414,6 +423,21 @@
   /* ---------- place pins ---------- */
   const pins = new Map();
   let selectedPlace = null;
+  /* trips: just a star where they went — never part of the life route */
+  const tripMarks = [];
+  const tripPhotos = t => (t.photos || []).filter(hasPhoto).map(x => ({ full: photoFiles(x).src, thumb: photoFiles(x).thumb, caption: [t.zh || t.name, x.caption, t.year].filter(Boolean).join(' · ') }));
+  function buildTrips() {
+    tripMarks.forEach(m => m.remove()); tripMarks.length = 0;
+    for (const t of G.trips || []) {
+      const ph = tripPhotos(t), el = document.createElement('button');
+      el.type = 'button'; el.className = 'trip-star';
+      el.innerHTML = `<span class="ts-in">${ph[0] ? `<img src="${esc(ph[0].thumb)}" alt="">` : ''}<i>★</i><b>${esc(t.zh || t.name)}${t.year ? ` <small>${esc(String(t.year))}</small>` : ''}</b></span>`;
+      el.setAttribute('aria-label', `${t.zh || t.name}，${ph.length} 张照片`);
+      el.onclick = e => { e.stopPropagation(); if (!picking && ph.length) openLightbox(ph, 0); };
+      el.style.zIndex = 4;   // above the photo bubbles
+      tripMarks.push(new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat(spotCoord(t)).addTo(map));
+    }
+  }
   function buildPins() {
     pins.forEach(m => m.remove()); pins.clear();
     for (const p of places()) {
@@ -984,6 +1008,11 @@
       items.push({ kind: 'story', year: y, at: last, label: m.label, sort: i, place: p, spot: m.spot, title: m.title, text: m.text, photos: (m.photos || []).filter(hasPhoto).map(x => ({ thumb: photoFiles(x).thumb, full: photoFiles(x).src, caption: x.caption || '' })) });
     });
     S.custom.forEach(c => items.push({ kind: 'mine', year: +c.year || null, at: +c.year || 9999, sort: 1e4 + (c.created || 0) / 1e9, place: placeById(c.id), title: c.city, text: c.text, moods: c.moods, fromWish: c.fromWish, photos: photosOf(c.id) }));
+    (G.trips || []).forEach((t, i) => {
+      const home = G.places.find(p => p.id === 'ca') || G.places[0];
+      items.push({ kind: 'trip', year: +t.year || null, label: '一起去旅行', at: +t.year ? +t.year + 0.6 : 9998, sort: 4e4 + i,
+        place: { ...home, id: home.id, city: t.zh || t.name }, title: `✈️ ${t.zh || t.name}${t.zh && t.name !== t.zh ? ' · ' + t.name : ''}`, text: t.note || '', photos: tripPhotos(t), trip: t });
+    });
     (G.moments || []).forEach((m, i) => { const p = placeById(m.place); if (p) items.push({ kind: 'moment', year: +m.date.slice(0, 4), at: +m.date.slice(0, 4) + 0.5 + i / 100, sort: 3e4 + i, place: p, moment: m,
       photos: (m.photos || []).map(n => ({ thumb: `photos/thumb/${n}.jpg`, full: `photos/web/${n}.jpg`, caption: '' })) }); });
     S.cards.forEach(c => { const p = placeById(c.place); if (p) items.push({ kind: 'card', year: +c.year || null, at: +c.year || 9999, sort: 2e4 + (c.created || 0) / 1e9, place: p, card: c }); });
@@ -993,7 +1022,7 @@
     const items = journalItems();
     const years = new Map();
     items.slice().sort((a, b) => a.at - b.at || a.sort - b.sort).forEach(it => {
-      const k = it.year || it.label || '某一年'; if (!years.has(k)) years.set(k, []); years.get(k).push(it);
+      const k = it.year || (it.kind === 'trip' ? '一起去旅行' : it.label) || '某一年'; if (!years.has(k)) years.set(k, []); years.get(k).push(it);
     });
     let n = 0;
     const card = it => {
@@ -1012,7 +1041,7 @@
       return `<article class="jn-item ${it.kind}" data-place="${p.id}" style="--r:${(i % 2 ? 1 : -1) * .8}deg">
         ${tape(i)}
         <div class="jn-meta"><span class="jn-where"><i class="jn-fl"></i>${esc(p.city)}${it.spot ? ' · ' + esc(it.spot) : ''}</span>
-          <span class="jn-who">${it.kind === 'story' ? '润润写给你的' : it.fromWish ? '🌸 心愿实现了' : '你记下的'}</span></div>
+          <span class="jn-who">${it.kind === 'trip' ? '一起去旅行' : it.kind === 'story' ? '润润写给你的' : it.fromWish ? '🌸 心愿实现了' : '你记下的'}</span></div>
         <h3>${esc(it.title || p.city)}</h3>
         ${it.moods && it.moods.length ? `<div class="moods-row">${moodChips(it.moods)}</div>` : ''}
         ${it.text ? `<p>${esc(it.text)}</p>` : ''}
@@ -1031,7 +1060,7 @@
       const it = all[i];
       el.querySelectorAll('.jn-ph,.mo-ph').forEach(b => b.onclick = e => { e.stopPropagation(); openLightbox(it.photos, +b.dataset.j); });
       const mp = el.querySelector('[data-poster]'); if (mp) mp.onclick = e => { e.stopPropagation(); if (it.kind === 'moment') return Poster.moment(it.moment); const c = S.custom.find(x => x.id === it.place.id); if (c) Poster.place(c); };
-      el.onclick = () => { journalBk.hidden = true; openPlace(el.dataset.place, { fly: true }); };
+      el.onclick = () => { journalBk.hidden = true; if (it.kind === 'trip') map.flyTo({ center: spotCoord(it.trip), zoom: 9, duration: reduce ? 0 : 1800, essential: true }); else openPlace(el.dataset.place, { fly: true }); };
     });
   }
 
@@ -2782,6 +2811,6 @@
     }
   });
 
-  map.on('load', () => { buildIndex(); buildPins(); if (!jActive) homeView(false); });
+  map.on('load', () => { buildIndex(); buildPins(); buildTrips(); if (!jActive) homeView(false); });
   addEventListener('resize', () => layoutPins());
 })();
