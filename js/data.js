@@ -160,8 +160,10 @@ window.GIFT = {
     { title: 'When You Believe', artist: 'Whitney Houston & Mariah Carey', yt: 'LKaXY4IdZ40',
       note: '《埃及王子》的主题曲，讲摩西带领以色列人出埃及。“Many nights we’ve prayed, with no proof anyone could hear… There can be miracles when you believe.”' }
   ],
-  // 背景音乐：在网页里现场生成的轻柔音乐（没有文件，没有版权问题）；有人说话、放歌的时候会自动变小
+  // 背景音乐：轻柔的钢琴曲，打开网站点一下就自动开始，一首接一首；有人说话的时候自动变小
+  // 都是公版录音（Musopen 录制，可以免费使用）：萨蒂《裸体歌舞》第一首、舒曼《梦幻曲》、肖邦《夜曲 Op.9 No.2》
   ambient: true,
+  bgm: ['sounds/piano-satie.m4a', 'sounds/piano-schumann.m4a', 'sounds/piano-chopin.m4a'],
 
   // 以后打开网站时的问候（在“设置”里选“直接跟我打招呼”）
   welcome: {

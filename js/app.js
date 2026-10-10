@@ -146,56 +146,29 @@
        it steps aside (gets quiet) whenever someone is talking or a song is playing */
     let amb = null, ducks = 0, songOn = false;
     const ambOn = () => G.ambient !== false && !(S.prefs && S.prefs.ambient === false) && on();
-    const AMB = 0.63;   // measured: the music then sits at the same loudness as the recorded voices (about -17.5 dBFS)
+    const AMB = 1;   // the piano files are levelled to the recorded voices (-17.5 dBFS)
     function ambTarget() { return !amb || !ambOn() || document.hidden ? 0 : songOn ? 0 : ducks > 0 ? AMB * 0.18 : AMB; }   // under a voice: about 15 dB quieter
     function ambLevel(sec = 1.2) { if (!amb) return; const t = ctx.currentTime, g = amb.out.gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(ambTarget(), t + sec); }
-    // the music itself, built on any audio context (so it can also be measured offline)
-    function buildAmbient(c, out) {
-      const dest = c.createDynamicsCompressor();
-      dest.threshold.value = -14; dest.knee.value = 8; dest.ratio.value = 6; dest.attack.value = .01; dest.release.value = .4;
-      dest.connect(out);
-      const rev = c.createConvolver(), len = c.sampleRate * 3.2, ir = c.createBuffer(2, len, c.sampleRate);
-      for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
-      rev.buffer = ir; const wet = c.createGain(); wet.gain.value = .55; rev.connect(wet).connect(dest);
-      const dry = c.createGain(); dry.gain.value = .5; dry.connect(dest);
-      const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1400; lp.connect(dry); lp.connect(rev);
-      const hz = m => 440 * 2 ** ((m - 69) / 12);
-      // Cmaj9 – Am9 – Fmaj9 – G6/9 : warm, unresolved, peaceful
-      const CHORDS = [[48, 55, 64, 71, 74], [45, 52, 60, 67, 71], [41, 48, 57, 64, 67], [43, 50, 59, 64, 69]];
-      const PENT = [72, 74, 76, 79, 81, 84, 86, 88];
-      function note(m, t, dur, vol) {
-        const o = c.createOscillator(), g = c.createGain();
-        o.type = 'triangle'; o.frequency.value = hz(m); o.detune.value = (Math.random() - .5) * 8;
-        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + Math.min(2.5, dur * .35)); g.gain.setValueAtTime(vol, t + dur * .6); g.gain.linearRampToValueAtTime(0, t + dur);
-        o.connect(g).connect(lp); o.start(t); o.stop(t + dur + .1);
-      }
-      function bell(m, t) {
-        const o = c.createOscillator(), g = c.createGain();
-        o.type = 'sine'; o.frequency.value = hz(m);
-        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.5, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + 3.2);
-        o.connect(g); g.connect(dry); g.connect(rev); o.start(t); o.stop(t + 3.3);
-      }
-      let next = c.currentTime + .1, bellAt = c.currentTime + 2, step = 0;
-      return function tick(ahead = 1.5) {   // schedule a little ahead, so it never stutters
-        while (next < c.currentTime + ahead) { CHORDS[step % CHORDS.length].forEach((m, i) => note(m, next + i * .12, 9.5, i === 0 ? .3 : .21)); next += 8; step++; }
-        while (bellAt < c.currentTime + ahead) { bell(PENT[Math.floor(Math.random() * PENT.length)], bellAt); bellAt += 2.5 + Math.random() * 4; }
-      };
-    }
+    // calm piano, one piece after another, starting from a different one each visit
+    const BGM = (G.bgm || []).slice();
     function startAmbient() {
-      if (!ctx || amb || !ambOn()) return;
+      if (!ctx || amb || !ambOn() || !BGM.length) return;
       const out = ctx.createGain(); out.gain.value = 0; out.connect(ctx.destination);
-      const tick = buildAmbient(ctx, out);
-      amb = { out, timer: 0 };
-      tick(); amb.timer = setInterval(() => tick(), 500);
-      ambLevel(4);
+      amb = { out, i: Math.floor(Math.random() * BGM.length), src: null };
+      const next = async () => {
+        const url = BGM[amb.i % BGM.length]; amb.i++;
+        if (!buffers[url]) buffers[url] = fetch(url).then(r => r.arrayBuffer()).then(b => new Promise((res, rej) => ctx.decodeAudioData(b, res, rej))).catch(() => null);
+        const buf = await buffers[url];
+        if (!buf) return setTimeout(next, 1000);
+        const src = ctx.createBufferSource(); src.buffer = buf; src.connect(out);
+        src.onended = () => { if (amb.src === src) setTimeout(next, 1500); };   // a short breath between pieces
+        amb.src = src; src.start();
+        // fetch the following piece while this one plays
+        const nu = BGM[amb.i % BGM.length]; if (!buffers[nu]) buffers[nu] = fetch(nu).then(r => r.arrayBuffer()).then(b => new Promise((res, rej) => ctx.decodeAudioData(b, res, rej))).catch(() => null);
+      };
+      next();
+      ambLevel(3);
     }
-    // for checking the loudness: render 32 seconds offline and measure it
-    window.__measureAmbient = async () => {
-      const oc = new OfflineAudioContext(1, 48000 * 32, 48000), g = oc.createGain(); g.gain.value = AMB; g.connect(oc.destination);
-      buildAmbient(oc, g)(32); const buf = await oc.startRendering(), d = buf.getChannelData(0);
-      let sum = 0, n = 0, pk = 0; for (let i = 48000 * 4; i < d.length; i++) { sum += d[i] * d[i]; n++; pk = Math.max(pk, Math.abs(d[i])); }
-      return { rms: 20 * Math.log10(Math.sqrt(sum / n)), peak: 20 * Math.log10(pk) };
-    };
     function ambient(onOff) { if (onOff) { unlock(); startAmbient(); ambLevel(2); } else ambLevel(1.5); }
     function duck(sec) { ducks++; ambLevel(.4); setTimeout(() => { ducks = Math.max(0, ducks - 1); ambLevel(1.8); }, sec * 1000); }
     function song(playing) { songOn = playing; ambLevel(playing ? .6 : 2); }
@@ -1751,8 +1724,6 @@
   function openSongs() { renderSongs(); songs.hidden = false; if (curSong == null && (G.songs || []).length) playSong(0); }
   function closeSongs() { songs.hidden = true; try { ytPlayer && ytPlayer.pauseVideo(); } catch (e) {} Sound.song(false); }
   $('#sgClose').onclick = closeSongs;
-  $('#setSong').onclick = () => { $('#settings').hidden = true; openSongs(); };
-  $('#wlSong').onclick = () => enterApp(openSongs);
   const ambBtn = $('#setAmbient');
   const showAmb = () => { const off = S.prefs.ambient === false; ambBtn.classList.toggle('off', off); ambBtn.querySelector('span').textContent = off ? '🎶 背景音乐关着' : '🎶 背景音乐开着'; };
   ambBtn.onclick = () => { S.prefs = { ...S.prefs, ambient: S.prefs.ambient === false }; save(); showAmb(); Sound.ambient(S.prefs.ambient !== false); };
