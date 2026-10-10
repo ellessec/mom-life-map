@@ -51,8 +51,8 @@ window.GIFT = {
                { p: 'zz-tongbai-road', caption: '桐柏路电力家属院', at: '34.7698, 113.6094' },
                { p: 'zz-wanglizhai', caption: '王立砦家属院', at: '34.7700, 113.6000' }] },           // TODO: 王立砦家属院的准确位置
     { place: 'kf', year: 1995, at: '34.8150, 114.3645', spot: '河南大学', by: 'train',
-      title: '去开封上河南大学',
-      text: '十八岁，你去开封上了河南大学。那几年认识的人、读过的书、一起出去玩过的地方，后来都跟着你走了很远。',
+      title: '开封的那几年',
+      text: '十八岁，你去开封上了河南大学。那几年并不好过，你不喜欢那里。可也正是那段经历，让你下定决心要去上海读书。谢谢那几年，把你推向了更远的地方。',
       photos: [{ p: 'kf-henu-1', caption: '河南大学' }, { p: 'kf-henu-2', caption: '河南大学' }, { p: 'kf-henu-3', caption: '河南大学' },
                { p: 'kf-trip-1', caption: '大学旅游' }, { p: 'kf-trip-2', caption: '大学旅游' },
                { p: 'kf-baogong', caption: '包公祠', at: '34.7938, 114.3332' }] },
