@@ -148,6 +148,14 @@ window.GIFT = {
     greetEvening: ['sounds/greet-evening.m4a', 1]      // 晚上好小妈（18 点以后）
   },
 
+  // 歌：在“🎵 听一首歌”里，用 YouTube 播放（yt 是 YouTube 视频网址 watch?v= 后面那一串）
+  songs: [
+    { title: 'When You Believe', artist: 'Whitney Houston & Mariah Carey', yt: 'LKaXY4IdZ40',
+      note: '《埃及王子》的主题曲，讲摩西带领以色列人出埃及。“Many nights we’ve prayed, with no proof anyone could hear… There can be miracles when you believe.”' }
+  ],
+  // 背景音乐：在网页里现场生成的轻柔音乐（没有文件，没有版权问题）；有人说话、放歌的时候会自动变小
+  ambient: true,
+
   // 以后打开网站时的问候（在“设置”里选“直接跟我打招呼”）
   welcome: {
     from: '— 润润',

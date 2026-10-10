@@ -120,6 +120,7 @@
       if (fadeIn) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + fadeIn); } else g.gain.setValueAtTime(v, t);
       src.start(t);
       const item = { src, g }; (playing[name] = playing[name] || []).push(item);
+      if (/^(voice|greet|diary)/.test(name) && typeof duck === 'function') setTimeout(() => duck(buf.duration + .4), Math.max(0, (t - ctx.currentTime) * 1000));
       src.onended = () => { playing[name] = (playing[name] || []).filter(x => x !== item); };
       return t + buf.duration / (src.playbackRate.value || 1);   // when it will end
     }
@@ -141,7 +142,56 @@
         prevEnd = await play(k, { atTime: Math.max(t0 + (at[k] || 0), prevEnd + 0.35) }) || prevEnd;
       }
     }
-    return { unlock, play, fadeOut, music, wishes, voices, has: n => !!cfg[n] };
+    /* calm background music, made live: slow soft chords and the odd music-box note.
+       it steps aside (gets quiet) whenever someone is talking or a song is playing */
+    let amb = null, ducks = 0, songOn = false;
+    const ambOn = () => G.ambient !== false && !(S.prefs && S.prefs.ambient === false) && on();
+    const AMB = 0.075;
+    function ambTarget() { return !amb || !ambOn() || document.hidden ? 0 : songOn ? 0 : ducks > 0 ? AMB * 0.22 : AMB; }
+    function ambLevel(sec = 1.2) { if (!amb) return; const t = ctx.currentTime, g = amb.out.gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(ambTarget(), t + sec); }
+    function startAmbient() {
+      if (!ctx || amb || !ambOn()) return;
+      const out = ctx.createGain(); out.gain.value = 0; out.connect(ctx.destination);
+      // a soft room: a short, decaying noise impulse as reverb
+      const rev = ctx.createConvolver(), len = ctx.sampleRate * 3.2, ir = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+      rev.buffer = ir; const wet = ctx.createGain(); wet.gain.value = .55; rev.connect(wet).connect(out);
+      const dry = ctx.createGain(); dry.gain.value = .5; dry.connect(out);
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1400; lp.connect(dry); lp.connect(rev);
+      amb = { out, lp, rev, timer: 0, next: 0, step: 0, bell: 0 };
+      const hz = m => 440 * 2 ** ((m - 69) / 12);
+      // Cmaj9 – Am9 – Fmaj9 – G6/9 : warm, unresolved, peaceful
+      const CHORDS = [[48, 55, 64, 71, 74], [45, 52, 60, 67, 71], [41, 48, 57, 64, 67], [43, 50, 59, 64, 69]];
+      const PENT = [72, 74, 76, 79, 81, 84, 86, 88];
+      function note(m, t, dur, vol, type = 'triangle', dest = lp) {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = type; o.frequency.value = hz(m); o.detune.value = (Math.random() - .5) * 8;
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + Math.min(2.5, dur * .35)); g.gain.setValueAtTime(vol, t + dur * .6); g.gain.linearRampToValueAtTime(0, t + dur);
+        o.connect(g).connect(dest); o.start(t); o.stop(t + dur + .1);
+      }
+      function bell(m, t) {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = hz(m);
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.09, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + 3.2);
+        o.connect(g); g.connect(dry); g.connect(rev); o.start(t); o.stop(t + 3.3);
+      }
+      amb.next = ctx.currentTime + .1; amb.bell = ctx.currentTime + 2;
+      const tick = () => {   // schedule a little ahead, so it never stutters
+        while (amb.next < ctx.currentTime + 1.5) {
+          const ch = CHORDS[amb.step % CHORDS.length];
+          ch.forEach((m, i) => note(m, amb.next + i * .12, 9.5, i === 0 ? .05 : .035));
+          amb.next += 8; amb.step++;
+        }
+        while (amb.bell < ctx.currentTime + 1.5) { bell(PENT[Math.floor(Math.random() * PENT.length)], amb.bell); amb.bell += 2.5 + Math.random() * 4; }
+      };
+      tick(); amb.timer = setInterval(tick, 500);
+      ambLevel(4);
+    }
+    function ambient(onOff) { if (onOff) { unlock(); startAmbient(); ambLevel(2); } else ambLevel(1.5); }
+    function duck(sec) { ducks++; ambLevel(.4); setTimeout(() => { ducks = Math.max(0, ducks - 1); ambLevel(1.8); }, sec * 1000); }
+    function song(playing) { songOn = playing; ambLevel(playing ? .6 : 2); }
+    document.addEventListener('visibilitychange', () => ambLevel(.5));
+    return { unlock, play, fadeOut, music, wishes, voices, has: n => !!cfg[n], ambient, duck, song };
   })();
   const urls = new Map();
   for (const p of S.photos) {
@@ -1643,6 +1693,42 @@
   $('#setCloud').onclick = () => { settings.hidden = true; $('#cloudChip').click(); };
 
   /* ---------- 做成海报: pretty posters of her words, for 小红书 ---------- */
+  document.addEventListener('pointerdown', () => Sound.ambient(true), { once: true, capture: true });
+
+  /* ---------- 听一首歌: songs from YouTube ---------- */
+  const songs = $('#songs');
+  let ytPlayer = null, ytReady = null, curSong = null;
+  function loadYT() {
+    if (ytReady) return ytReady;
+    return ytReady = new Promise(res => {
+      window.onYouTubeIframeAPIReady = res;
+      const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(s);
+    });
+  }
+  async function playSong(i) {
+    const sg = (G.songs || [])[i]; if (!sg) return;
+    curSong = i; renderSongs();
+    await loadYT();
+    if (!ytPlayer) {
+      ytPlayer = new YT.Player('sgFrame', { videoId: sg.yt, host: 'https://www.youtube-nocookie.com', playerVars: { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 },
+        events: { onStateChange: e => Sound.song(e.data === 1 || e.data === 3) } });
+    } else ytPlayer.loadVideoById(sg.yt);
+  }
+  function renderSongs() {
+    $('#sgList').innerHTML = (G.songs || []).map((sg, i) => `<button type="button" class="sg-item${i === curSong ? ' on' : ''}" data-i="${i}">
+      <b>${esc(sg.title)}</b><small>${esc(sg.artist || '')}</small>${sg.note ? `<p>${esc(sg.note)}</p>` : ''}</button>`).join('');
+    $('#sgList').querySelectorAll('[data-i]').forEach(b => b.onclick = () => playSong(+b.dataset.i));
+  }
+  function openSongs() { renderSongs(); songs.hidden = false; if (curSong == null && (G.songs || []).length) playSong(0); }
+  function closeSongs() { songs.hidden = true; try { ytPlayer && ytPlayer.pauseVideo(); } catch (e) {} Sound.song(false); }
+  $('#sgClose').onclick = closeSongs;
+  $('#setSong').onclick = () => { $('#settings').hidden = true; openSongs(); };
+  $('#wlSong').onclick = () => enterApp(openSongs);
+  const ambBtn = $('#setAmbient');
+  const showAmb = () => { const off = S.prefs.ambient === false; ambBtn.classList.toggle('off', off); ambBtn.querySelector('span').textContent = off ? '🎶 背景音乐关着' : '🎶 背景音乐开着'; };
+  ambBtn.onclick = () => { S.prefs = { ...S.prefs, ambient: S.prefs.ambient === false }; save(); showAmb(); Sound.ambient(S.prefs.ambient !== false); };
+  showAmb();
+
   const Poster = (() => {
     const modal = $('#poster'), cv = $('#pCanvas'), ctx = cv.getContext('2d');
     const SIZES = { '3:4': [1080, 1440], '1:1': [1080, 1080], '9:16': [1080, 1920] };
@@ -2306,7 +2392,7 @@
       return;
     }
     // a trip, filmed in three shots: pull back to see the whole leg, travel across it, then land
-    const ride = mode === 'plane' ? 4200 : mode === 'train' ? 3200 : 2000;
+    const ride = mode === 'plane' ? 2600 : mode === 'train' ? 2000 : 1300;
     const tok = jI;
     jBusy = true;
     syncSpots(i - 1, -1); setTrail(s);
@@ -2314,7 +2400,7 @@
       if (tok !== jI) return;
       const leg = jPath.slice(s, e + 1), lons = leg.map(p => p[0]), lats = leg.map(p => p[1]);
       const cam = map.cameraForBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: jPad(), maxZoom: 13 });
-      const pull = cam ? 1600 : 0;
+      const pull = cam ? 1100 : 0;
       if (cam) map.flyTo({ ...cam, zoom: Math.max(cam.zoom, map.getMinZoom()), duration: pull, curve: 1.2, essential: true });
       setTimeout(() => {
         if (tok !== jI) return;
@@ -2328,7 +2414,7 @@
           if (k < 1) { jTrailRaf = requestAnimationFrame(step); return; }
           jBusy = false; setHead(null); setTrail(e);
           if (mode !== 'local') Sound.fadeOut(mode, 1500);
-          flyToStop(i, 2200);
+          flyToStop(i, 1700);
           setTimeout(() => { if (tok === jI) { syncSpots(i, i); Sound.play('bloom', { volume: .8 }); } }, 900);
           map.once('moveend', () => { if (tok === jI) showStopPhotos(i); });
         };
