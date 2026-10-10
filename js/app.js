@@ -92,51 +92,55 @@
   const save = () => { stampChanges(); const p = Store.set('state', S).catch(() => {}); onSaved(); return p; };
 
   /* sound effects: her own files from data.js (sounds), or the built-in chime */
+  // sound: every file is downloaded and decoded up front, then played through one audio engine.
+  // the first tap only wakes the engine; nothing is pre-played, so on a slow connection
+  // a sound starts late instead of being cut off or doubled
   const Sound = (() => {
-    const raw = G.sounds || {}, cfg = {}, level = {}, els = {}, gains = {};
-    const at = {};
+    const raw = G.sounds || {}, cfg = {}, level = {}, at = {};
     for (const [k, v] of Object.entries(raw)) { const [src, l = 1, t = 0] = Array.isArray(v) ? v : [v]; if (src) { cfg[k] = src; level[k] = l; at[k] = t; } }
-    let ctx = null, unlocked = false;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ctx = AC ? new AC() : null, buffers = {}, playing = {};
     const on = () => !(S.prefs && S.prefs.sound === false);
-    const ac = () => ctx || (ctx = (window.AudioContext || window.webkitAudioContext) ? new (window.AudioContext || window.webkitAudioContext)() : null);
-    function el(name) {
-      if (!cfg[name]) return null;
-      if (!els[name]) {
-        const a = new Audio(cfg[name]); a.preload = 'auto'; a.loop = name === 'music'; a.crossOrigin = 'anonymous';
-        els[name] = a;
-        try { const c = ac(), g = c.createGain(); c.createMediaElementSource(a).connect(g).connect(c.destination); gains[name] = g; } catch (e) {}   // iPhones ignore audio.volume; a gain node works
-      }
-      return els[name];
-    }
-    function vol(name, v, ms = 0) {
-      const g = gains[name], c = ctx;
-      if (g && c) { g.gain.cancelScheduledValues(c.currentTime); g.gain.setValueAtTime(g.gain.value, c.currentTime); g.gain.linearRampToValueAtTime(v, c.currentTime + ms / 1000); }
-      else if (els[name]) els[name].volume = Math.max(0, Math.min(1, v));
-    }
-    // the first tap lets the browser play sounds later without another tap
-    function unlock(...except) {
-      if (unlocked) return; unlocked = true;
-      try { ac() && ctx.resume(); } catch (e) {}
-      for (const n of Object.keys(cfg)) { if (except.includes(n)) continue; const a = el(n); if (!a) continue; a.muted = true; a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(() => { a.muted = false; }); }
-    }
-    function play(name, { volume = 1, fallback } = {}) {
+    const load = name => buffers[name] || (buffers[name] = fetch(cfg[name]).then(r => r.arrayBuffer())
+      .then(b => new Promise((res, rej) => ctx.decodeAudioData(b, res, rej))).catch(() => null));
+    if (ctx) for (const n of Object.keys(cfg)) load(n);   // start downloading everything now
+    function unlock() { try { ctx && ctx.state !== 'running' && ctx.resume(); } catch (e) {} }
+    function stop(name) { for (const p of playing[name] || []) { try { p.src.stop(); } catch (e) {} } playing[name] = []; }
+    async function play(name, { volume = 1, fallback, when = 0, loop = false, fadeIn = 0, atTime = null } = {}) {
       if (!on()) return;
-      const a = el(name);
-      if (!a) { if (fallback) fallback(); return; }
-      try { ctx && ctx.resume(); } catch (e) {}
-      vol(name, volume * (level[name] || 1)); a.currentTime = 0; a.play().catch(() => {});
+      if (!cfg[name] || !ctx) { if (fallback) fallback(); return; }
+      unlock();
+      const want = atTime ?? ctx.currentTime + when;   // the moment it should start
+      const buf = await load(name);
+      if (!buf) { if (fallback) fallback(); return; }
+      stop(name);   // never two copies of the same sound
+      const src = ctx.createBufferSource(), g = ctx.createGain();
+      src.buffer = buf; src.loop = loop; src.connect(g).connect(ctx.destination);
+      const t = Math.max(ctx.currentTime + 0.02, want), v = volume * (level[name] || 1);
+      if (fadeIn) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + fadeIn); } else g.gain.setValueAtTime(v, t);
+      src.start(t);
+      const item = { src, g }; (playing[name] = playing[name] || []).push(item);
+      src.onended = () => { playing[name] = (playing[name] || []).filter(x => x !== item); };
+      return t + buf.duration / (src.playbackRate.value || 1);   // when it will end
     }
     function fadeOut(name, ms = 1200) {
-      const a = els[name]; if (!a || a.paused) return;
-      vol(name, 0, ms); setTimeout(() => a.pause(), ms + 50);
+      for (const { src, g } of playing[name] || []) {
+        const t = ctx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + ms / 1000);
+        try { src.stop(t + ms / 1000 + 0.05); } catch (e) {}
+      }
     }
-    function music(onOff) {
-      if (onOff) { if (!on() || !el('music')) return; const a = els.music; vol('music', 0); a.currentTime = 0; a.play().catch(() => {}); vol('music', .7, 2500); }
-      else fadeOut('music', 3500);
-    }
-    // the birthday wishes, one after another (voice, voice2, voice3…)
+    function music(onOff) { if (onOff) play('music', { volume: .7, loop: true, fadeIn: 2.5 }); else fadeOut('music', 3500); }
+    // the birthday wishes, one after another (voice, voice2, voice3…), each at its own moment
     const voices = () => Object.keys(cfg).filter(k => /^voice\d*$/.test(k)).sort();
-    function wishes() { for (const k of voices()) { if (at[k] > 0) setTimeout(() => play(k), at[k] * 1000); else play(k); } }
+    // one after another, never on top of each other: each waits for its time AND for the previous voice to finish
+    async function wishes() {
+      if (!ctx || !on()) return;
+      const t0 = ctx.currentTime; let prevEnd = 0;
+      for (const k of voices()) {
+        const buf = await load(k); if (!buf) continue;
+        prevEnd = await play(k, { atTime: Math.max(t0 + (at[k] || 0), prevEnd + 0.35) }) || prevEnd;
+      }
+    }
     return { unlock, play, fadeOut, music, wishes, voices, has: n => !!cfg[n] };
   })();
   const urls = new Map();
@@ -1540,7 +1544,16 @@
     const familyLink = k => `${(G.server && G.server.site) || location.origin + location.pathname}#k=${k}`;
 
     /* one-time setup: make a family key (only the daughter does this) */
+    // making a key is deliberate: a page left open with #setup-backup must not quietly make new ones
     function setupPage() {
+      panel.classList.add('on-top'); panel.hidden = false;
+      $('#cpBody').innerHTML = `<p class="cp-lead">新的家庭备份？</p>
+        <p class="cp-note">家庭备份已经设置好了的话，<b>不需要</b>再做一个——新的钥匙和小妈手里的家庭链接对不上。只有想从头换一把新钥匙的时候才点下面。</p>
+        <div class="modal-actions"><button type="button" class="pill ghost" id="cpNo">不用了</button><button type="button" class="pill primary" id="cpMake">生成新的钥匙</button></div>`;
+      $('#cpNo').onclick = () => { panel.hidden = true; panel.classList.remove('on-top'); };
+      $('#cpMake').onclick = makeNewKey;
+    }
+    function makeNewKey() {
       const raw = crypto.getRandomValues(new Uint8Array(32)), k = b64u(raw);
       useKey(k).then(() => {
         panel.classList.add('on-top'); panel.hidden = false;   // above the gift / welcome screens
@@ -2573,7 +2586,7 @@
   }
   function unwrapGift() {
     if (scene.classList.contains('opening')) return;
-    Sound.unlock('open', 'music');   // these two start right now; every birthday wish (they come a moment later) is unlocked by this same tap
+    Sound.unlock();   // this tap wakes the audio engine for everything that follows
     Sound.play('open', { fallback: chime });
     Sound.wishes();
     Sound.music(true);
@@ -2636,7 +2649,7 @@
     Sound.unlock(welcome.dataset.greet);
     Sound.play(welcome.dataset.greet);
     // then your message, after the greeting has finished
-    setTimeout(() => { if (!welcome.hidden) Sound.play('diary'); }, Sound.has(welcome.dataset.greet) ? 2300 : 400);
+    if (!welcome.hidden) Sound.play('diary', { when: Sound.has(welcome.dataset.greet) ? 2.3 : 0.3 });
     try { navigator.vibrate && navigator.vibrate(10); } catch (e) {}
   }
   $('#wlBud').onclick = openWelcome;

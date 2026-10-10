@@ -62,6 +62,12 @@ window.GIFT = {
       title: '去上海读研究生，遇见了爸爸',
       text: '二十二岁，你离开河南，一个人去了上海，在华东师范大学读研究生。一座很大、很快的城市，你在那里重新开始；也是在上海，你遇见了爸爸。',
       photos: [{ p: 'sh-ecnu', caption: '华东师范大学' }] },
+    { place: 'sh', year: '', label: '还没毕业', at: '31.2738, 121.4744', spot: '乐宁教育 · 西江湾路420号',     // TODO: 哪一年？（研究生还没毕业的时候）
+      title: '和小爸一起，创办了乐宁教育',
+      text: '研究生还没毕业，你就和小爸一起创办了乐宁教育。西江湾路420号，是这一切开始的地方——从乐宁教育中心的第一块牌子，到站上台讲话、上新浪教育，再到和大家一起过年会，这些都是你一点一点做出来的。',
+      photos: [{ p: 'sh-lening-center', caption: '乐宁教育中心 · 西江湾路420号' }, { p: 'sh-lening-team', caption: '乐宁的大家' },
+               { p: 'sh-lening-1', caption: '乐宁教育' }, { p: 'sh-lening-2', caption: '乐宁教育' },
+               { p: 'sh-lening-2014', caption: '2014 · 新浪教育' }, { p: 'sh-lening-2019', caption: '2019' }, { p: 'sh-lening-2020', caption: '2020 年会' }] },
     { place: 'sh', year: '', label: '有了我', at: '31.2050, 121.5780', spot: '家 · 罗山路1700弄6号802',      // TODO: 罗山路1700弄的准确位置；年份
       title: '家里多了一个我',
       text: '后来，家里多了一个我。在罗山路1700弄6号802，你抱着我、陪着我，一点一点把我养大。',
@@ -69,16 +75,9 @@ window.GIFT = {
                { p: 'sh-withme-4', caption: '一家人' }, { p: 'sh-withme-5', caption: '和润润' }, { p: 'sh-withme-6', caption: '和润润' },
                { p: 'sh-luoshan-802', caption: '罗山路1700弄6号802' }] },
     { place: 'sh', year: '', label: '后来', at: '31.2188, 121.5486', spot: '家 · 世纪公园 1402',
-      title: '在上海安家、创业',
-      text: '后来，你们在世纪公园旁边的 1402 安了家，一家人一起给奶奶过生日。你还自己创业，做了乐宁教育——从乐宁教育中心，到站上台讲话，再到和大家一起过年会，这些都是你一点一点做出来的。',
-      photos: [{ p: 'sh-home-1402', caption: '世纪公园 1402' }, { p: 'sh-grandma-birthday', caption: '给奶奶过生日' },
-               { p: 'sh-lening-center', caption: '乐宁教育中心', at: '31.2304, 121.4737' },                 // TODO: 乐宁教育的准确位置（下面几张一样）
-               { p: 'sh-lening-2014', caption: '2014 · 新浪教育', at: '31.2304, 121.4737' },
-               { p: 'sh-lening-2019', caption: '2019', at: '31.2304, 121.4737' },
-               { p: 'sh-lening-2020', caption: '2020 年会', at: '31.2304, 121.4737' },
-               { p: 'sh-lening-team', caption: '乐宁的大家', at: '31.2304, 121.4737' },
-               { p: 'sh-lening-1', caption: '乐宁教育', at: '31.2304, 121.4737' },
-               { p: 'sh-lening-2', caption: '乐宁教育', at: '31.2304, 121.4737' }] },
+      title: '在上海安了家',
+      text: '后来，你们在世纪公园旁边的 1402 安了家。家里有过很多热闹的日子，比如一家人一起给奶奶过生日。',
+      photos: [{ p: 'sh-home-1402', caption: '世纪公园 1402' }, { p: 'sh-grandma-birthday', caption: '给奶奶过生日' }] },
     { place: 'to', year: '', label: '后来', at: '43.7270, -79.3620', spot: '家 · 1 Chapleau',          // TODO: 年份
       title: '去了多伦多',
       text: '后来，你们去了多伦多，家在 1 Chapleau。York U 就在不远的地方；湖心岛、Scarborough 的情人节、Blue Mountain，还有我在 Lakefield 毕业的那一天——你都在。',
